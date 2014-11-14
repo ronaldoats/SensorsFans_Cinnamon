@@ -4,17 +4,16 @@ const Mainloop = imports.mainloop; //Para realizar Blucles de Ejecución
 const Lang = imports.lang; //Controlador
 const Applet = imports.ui.applet; //Applet
 const GLib = imports.gi.GLib; //Libreria para el control de ejecuciones nivel Comandos Linux
+const PanelMenu = imports.ui.panelMenu;
+const PopupMenu = imports.ui.popupMenu;
 
 function MyApplet(orientation) {
     this._init(orientation);
 }
-
 MyApplet.prototype = {
     __proto__: Applet.IconApplet.prototype,
-
     _init: function (orientation) {
         Applet.IconApplet.prototype._init.call(this, orientation);
-
         try {
             //**********************************
             //*********CONFIGURACIONES *********
@@ -22,6 +21,12 @@ MyApplet.prototype = {
             this.sensorsPath = this._detectSensors();
             let labelText = "Sensors";
             let icon = this.actor.get_children()[0];
+            this.menuManager = new PopupMenu.PopupMenuManager(this);
+            this.menu = new Applet.AppletPopupMenu(this, orientation);
+            this.menuManager.addMenu(this.menu);
+
+            this._contentSection = new PopupMenu.PopupMenuSection();
+            this.menu.addMenuItem(this._contentSection);
 
             //this.actor.remove_actor(icon);
             //Caja Principal
@@ -45,25 +50,58 @@ MyApplet.prototype = {
             //Ejecutamos el evento que actualiza la información de la velocidad del Fan
             this._updateFanSensor();
         } catch (e) {
-            global.logError(e);
+            //global.logError(e);
         }
     },
-
     on_applet_clicked: function (event) {
-        //GLib.spawn_command_line_async('xkill');
+        //Mostrar/Ocultar Menu con cada Click en el Applet
+        this.menu.toggle();
     },
+
     //EVENTO PARA ACTUALIZAR LA INFORMACION DE LA VELOCIDAD DEL FAN
     _updateFanSensor: function () {
         let sensors_output = GLib.spawn_command_line_sync(this.sensorsPath); //get the output of the sensors command
         let tempInfo;
+        try {
+            let sensors_output = GLib.spawn_command_line_sync(this.sensorsPath); //get the output of the sensors command
+            let tempInfo;
+            if (sensors_output[0]) {
+                tempInfo = this._findFanOutput(sensors_output[1].toString());
+            }
+            this._mainLabel.set_text(tempInfo);
+            //Anexo de Menu
+            //Prelimpieza de menu
+            this.menu.box.get_children().forEach(function (c) {
+                c.destroy()
+            });
+            let items = new Array();
+            let section = new PopupMenu.PopupMenuSection("Temperature");
 
-        if (sensors_output[0]) {
-            tempInfo = this._findFanOutput(sensors_output[1].toString());
+            //Anexo de Información Detallada
+            let senses_lines = sensors_output[1].toString().split("\n");
+            for (let i = 0; i < senses_lines.length; i++) {
+                let item = new PopupMenu.PopupMenuItem("");
+                //-----net
+                item.addActor(new St.Label({
+                    text: senses_lines[i]
+                    /*,
+                    style_class: "sm-label"*/
+                }));
+                //-----
+               /* item.connect('activate', function () {
+                    //    Util.spawn(command);
+                });*/
+                //-----
+                section.addMenuItem(item);
+            }
+
+
+            this.menu.addMenuItem(section);
+            Mainloop.timeout_add(1000, Lang.bind(this, this._updateFanSensor));
+        } catch (e) {
+            this._updateFanSensor();
         }
-        this._mainLabel.set_text(tempInfo);
-        Mainloop.timeout_add(1000, Lang.bind(this, this._updateFanSensor));
     },
-
     //DETECTA LA UBICACIÓN DE LA FUNCION SENSORS
     _detectSensors: function () {
         //detect if sensors is installed
@@ -73,12 +111,10 @@ MyApplet.prototype = {
         }
         return null;
     },
-
     //BUSCA LA INFORMACIÓN DE LA VELOCIDAD DEL FAN
     _findFanOutput: function (txt) {
         let senses_lines = txt.split("\n");
         let line = '';
-        let type = '';
         let s = new Array();
         let n = 0,
             c = 0;
