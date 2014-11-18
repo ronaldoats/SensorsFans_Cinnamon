@@ -115,10 +115,6 @@ MyApplet.prototype = {
     _findFanOutput: function (txt) {
         let senses_lines = txt.split("\n");
         let line = '';
-        let s = new Array();
-        let n = 0,
-            c = 0;
-        let f;
         //iterate through each lines
         for (let i = 0; i < senses_lines.length; i++) {
             line = senses_lines[i];
@@ -126,7 +122,7 @@ MyApplet.prototype = {
                 return line;
             }
         }
-        return s;
+        return 'sudo modprobe i8k force=1';
     }
 };
 
