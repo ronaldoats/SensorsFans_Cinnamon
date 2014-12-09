@@ -1,0 +1,59 @@
+{
+    "head": {
+        "type": "header",
+        "description": "Settings - Sensors"
+    },
+    "refreshInterval": {
+        "type": "spinbutton",
+        "default": 1,
+        "min": 1,
+        "max": 60,
+        "step": 1,
+        "units": "seconds",
+        "description": "Refresh Interval:",
+        "tooltip": "Interval"
+    },
+    "SearchFan": {
+        "type": "entry",
+        "default": "Fan",
+        "description": "Search command for RPM",
+        "tooltip": "Search command for RPM"
+    },
+    "ScriptFilter": {
+        "type": "checkbox",
+        "default": false,
+        "description": "Substring search filter",
+        "tooltip": "Substring search filter"
+    },
+    "ScriptFilter_Init": {
+        "type": "spinbutton",
+        "default": 13,
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "units": "substring starting",
+        "description": "substring starting",
+        "tooltip": ""
+    },
+    "ScriptFilter_End": {
+        "type": "spinbutton",
+        "default": 17,
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "units": "end of substring",
+        "description": "end of substring",
+        "tooltip": ""
+    },
+    "ToolTipApplet":{
+        "type":"entry",
+        "default":"SENSORS FANS",
+        "description":"Tooltip Applet"
+    },
+    "MsjErrorSensors":{
+        "type":"entry",
+        "default":"sudo modprobe i8k force=1",
+        "description":"Error message",
+        "tooltip":"Error message"
+    }
+}

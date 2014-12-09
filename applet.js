@@ -1,3 +1,4 @@
+const Settings = imports.ui.settings; // ++ Needed if you use Settings / Configuración
 const St = imports.gi.St; //Componente Visual
 const Pango = imports.gi.Pango; //Parametrizador de componente Visual
 const Mainloop = imports.mainloop; //Para realizar Blucles de Ejecución
@@ -7,22 +8,26 @@ const GLib = imports.gi.GLib; //Libreria para el control de ejecuciones nivel Co
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 
-function MyApplet(orientation) {
-    this._init(orientation);
+function MyApplet(metadata, orientation, panelHeight, instance_id) {
+    this._init(metadata, orientation, panelHeight, instance_id);
 }
+
 MyApplet.prototype = {
     __proto__: Applet.IconApplet.prototype,
-    _init: function (orientation) {
-        Applet.IconApplet.prototype._init.call(this, orientation);
+    _init: function (metadata, orientation, panelHeight, instance_id) {
+        Applet.TextApplet.prototype._init.call(this, orientation, panelHeight, instance_id);
+        Applet.IconApplet.prototype._init.call(this, orientation, panelHeight, instance_id);
         try {
             //**********************************
             //*********CONFIGURACIONES *********
+            this.settings = new Settings.AppletSettings(this, metadata.uuid, instance_id); // ++ Picks up UUID from metadata for Settings
+            this.orient = orientation;
             //DEFINICIÓN DE VARIABLES
             this.sensorsPath = this._detectSensors();
             let labelText = "Sensors";
             let icon = this.actor.get_children()[0];
             this.menuManager = new PopupMenu.PopupMenuManager(this);
-            this.menu = new Applet.AppletPopupMenu(this, orientation);
+            this.menu = new Applet.AppletPopupMenu(this, this.orient);
             this.menuManager.addMenu(this.menu);
 
             this._contentSection = new PopupMenu.PopupMenuSection();
@@ -42,11 +47,10 @@ MyApplet.prototype = {
                 y_align: St.Align.MIDDLE,
                 y_fill: false
             });
-            //Le anexamos tooltip al componente
-            this.set_applet_tooltip(_("SENSORS FANS"));
             //Le asignamos texto al Label principal
             this._mainLabel.set_text(labelText);
-            //**********************************
+
+            this._SettingsSystem(); //INICIAMOS PROCESO DE LEER CONFIGURACION
             //Ejecutamos el evento que actualiza la información de la velocidad del Fan
             this._updateFanSensor();
         } catch (e) {
@@ -56,6 +60,54 @@ MyApplet.prototype = {
     on_applet_clicked: function (event) {
         //Mostrar/Ocultar Menu con cada Click en el Applet
         this.menu.toggle();
+    },
+    // ++ Function called when settings are changed
+    on_settings_changed: function () {
+        this._SettingsSystem();
+    },
+
+    _SettingsSystem: function () {
+        //CARGA DE CONFIGURACIONES DE SETTINGS-SCHEMA.JSON
+        this.settings.bindProperty(Settings.BindingDirection.IN, // Setting type
+            "refreshInterval", // The setting key
+            "refreshInterval", // The property to manage (this.refreshInterval)
+            this.on_settings_changed, // Callback when value changes
+            null); // Optional callback data
+
+        this.settings.bindProperty(Settings.BindingDirection.IN, // Setting type
+            "SearchFan", // The setting key
+            "SearchFan", // The property to manage
+            this.on_settings_changed, // Callback when value changes
+            null); // Optional callback data
+
+        this.settings.bindProperty(Settings.BindingDirection.IN, // Setting type
+            "ScriptFilter", // The setting key
+            "ScriptFilter", // The property to manage
+            this.on_settings_changed, // Callback when value changes
+            null); // Optional callback data
+
+        this.settings.bindProperty(Settings.BindingDirection.IN, // Setting type
+            "ScriptFilter_Init", // The setting key
+            "ScriptFilter_Init", // The property to manage
+            this.on_settings_changed, // Callback when value changes
+            null); // Optional callback data
+
+        this.settings.bindProperty(Settings.BindingDirection.IN, // Setting type
+            "ScriptFilter_End", // The setting key
+            "ScriptFilter_End", // The property to manage
+            this.on_settings_changed, // Callback when value changes
+            null); // Optional callback data
+
+        this.settings.bindProperty(Settings.BindingDirection.IN, // Setting type
+            "ToolTipApplet", // The setting key
+            "ToolTipApplet", // The property to manage
+            this.on_settings_changed, // Callback when value changes
+            null); // Optional callback data
+
+
+        //Le anexamos tooltip al componente
+        this.set_applet_tooltip(_(this.ToolTipApplet));
+        //**********************************
     },
 
     //EVENTO PARA ACTUALIZAR LA INFORMACION DE LA VELOCIDAD DEL FAN
@@ -88,16 +140,15 @@ MyApplet.prototype = {
                     style_class: "sm-label"*/
                 }));
                 //-----
-               /* item.connect('activate', function () {
+                /* item.connect('activate', function () {
                     //    Util.spawn(command);
                 });*/
                 //-----
                 section.addMenuItem(item);
             }
 
-
             this.menu.addMenuItem(section);
-            Mainloop.timeout_add(1000, Lang.bind(this, this._updateFanSensor));
+            Mainloop.timeout_add((this.refreshInterval * 1000), Lang.bind(this, this._updateFanSensor));
         } catch (e) {
             this._updateFanSensor();
         }
@@ -118,15 +169,20 @@ MyApplet.prototype = {
         //iterate through each lines
         for (let i = 0; i < senses_lines.length; i++) {
             line = senses_lines[i];
-            if (line.indexOf("Fan") > 0) {
-                return line;
+            if (line.indexOf(this.SearchFan) > 0) {
+                if (this.ScriptFilter) {
+                    return line.substring(this.ScriptFilter_Init, this.ScriptFilter_End) + ' RPM';
+                } else {
+                    return line;
+                }
             }
         }
         return 'sudo modprobe i8k force=1';
     }
 };
 
-function main(metadata, orientation) {
-    let myApplet = new MyApplet(orientation);
+
+function main(metadata, orientation, panelHeight, instance_id) {
+    let myApplet = new MyApplet(metadata, orientation, panelHeight, instance_id);
     return myApplet;
 }
