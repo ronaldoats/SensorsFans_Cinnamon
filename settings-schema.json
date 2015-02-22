@@ -19,11 +19,17 @@
         "description": "Search command for RPM",
         "tooltip": "Search command for RPM"
     },
+    "SearchCPU": {
+        "type": "entry",
+        "default": "CPU",
+        "description": "Search command for CPU ºC",
+        "tooltip": "Search command for CPU ºC"
+    },
     "ScriptFilter": {
         "type": "checkbox",
         "default": false,
-        "description": "Substring search filter",
-        "tooltip": "Substring search filter"
+        "description": "Substring search filter - RPM",
+        "tooltip": "Substring search filter - RPM"
     },
     "ScriptFilter_Init": {
         "type": "spinbutton",
@@ -45,15 +51,15 @@
         "description": "end of substring",
         "tooltip": ""
     },
-    "ToolTipApplet":{
-        "type":"entry",
-        "default":"SENSORS FANS",
-        "description":"Tooltip Applet"
+    "ToolTipApplet": {
+        "type": "entry",
+        "default": "SENSORS FANS",
+        "description": "Tooltip Applet"
     },
-    "MsjErrorSensors":{
-        "type":"entry",
-        "default":"sudo modprobe i8k force=1",
-        "description":"Error message",
-        "tooltip":"Error message"
+    "MsjErrorSensors": {
+        "type": "entry",
+        "default": "sudo modprobe i8k force=1",
+        "description": "Error message",
+        "tooltip": "Error message"
     }
 }

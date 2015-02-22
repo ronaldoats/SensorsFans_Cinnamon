@@ -79,7 +79,11 @@ MyApplet.prototype = {
             "SearchFan", // The property to manage
             this.on_settings_changed, // Callback when value changes
             null); // Optional callback data
-
+        this.settings.bindProperty(Settings.BindingDirection.IN, // Setting type
+            "SearchCPU", // The setting key
+            "SearchCPU", // The property to manage
+            this.on_settings_changed, // Callback when value changes
+            null); // Optional callback data
         this.settings.bindProperty(Settings.BindingDirection.IN, // Setting type
             "ScriptFilter", // The setting key
             "ScriptFilter", // The property to manage
@@ -113,14 +117,19 @@ MyApplet.prototype = {
     //EVENTO PARA ACTUALIZAR LA INFORMACION DE LA VELOCIDAD DEL FAN
     _updateFanSensor: function () {
         let sensors_output = GLib.spawn_command_line_sync(this.sensorsPath); //get the output of the sensors command
-        let tempInfo;
+        let tempInfo, tempCPU;
         try {
             let sensors_output = GLib.spawn_command_line_sync(this.sensorsPath); //get the output of the sensors command
             let tempInfo;
             if (sensors_output[0]) {
-                tempInfo = this._findFanOutput(sensors_output[1].toString());
+                tempInfo = this._findSearchOutput(sensors_output[1].toString(), this.SearchFan).replace("Right Fan: ","RF: ").replace("Left Fan: ","LF: ");
+                //Reasignamos el valor false, para que no afecte al resto de busquedas
+                this.ScriptFilter = false;
+                tempCPU = this._findSearchOutput(sensors_output[1].toString(), this.SearchCPU);
+                tempCPU = tempCPU.substring(tempCPU.indexOf("+"));
             }
-            this._mainLabel.set_text(tempInfo);
+
+            this._mainLabel.set_text(tempInfo + " | " + tempCPU);
             //Anexo de Menu
             //Prelimpieza de menu
             this.menu.box.get_children().forEach(function (c) {
@@ -132,19 +141,22 @@ MyApplet.prototype = {
             //Anexo de Información Detallada
             let senses_lines = sensors_output[1].toString().split("\n");
             for (let i = 0; i < senses_lines.length; i++) {
-                let item = new PopupMenu.PopupMenuItem("");
-                //-----net
-                item.addActor(new St.Label({
-                    text: senses_lines[i]
-                    /*,
-                    style_class: "sm-label"*/
-                }));
-                //-----
-                /* item.connect('activate', function () {
-                    //    Util.spawn(command);
-                });*/
-                //-----
-                section.addMenuItem(item);
+                //Corrección a espacios vacios
+                if (senses_lines[i].toString().trim().length > 0) {
+                    let item = new PopupMenu.PopupMenuItem("");
+                    //-----net
+                    item.addActor(new St.Label({
+                        text: senses_lines[i]
+                            /*,
+                            style_class: "sm-label"*/
+                    }));
+                    //-----
+                    /* item.connect('activate', function () {
+                        //    Util.spawn(command);
+                    });*/
+                    //-----
+                    section.addMenuItem(item);
+                }
             }
 
             this.menu.addMenuItem(section);
@@ -162,19 +174,19 @@ MyApplet.prototype = {
         }
         return null;
     },
-    //BUSCA LA INFORMACIÓN DE LA VELOCIDAD DEL FAN
-    _findFanOutput: function (txt) {
+    // BUSCA LA INFORMACIÓN DE LA VELOCIDAD DEL FAN Y OTROS ELEMENTOS
+    // ESTE CODIGO ESTA SUJETO A CAMBIOS POR EFECTOS DE NO ESTAR ESCRITO ADECUADAMENTE - 22/02/15 - FEBRERO-15 - 03:51 PM
+    _findSearchOutput: function (txt, SearchElement) {
         let senses_lines = txt.split("\n");
         let line = '';
         //iterate through each lines
         for (let i = 0; i < senses_lines.length; i++) {
             line = senses_lines[i];
-            if (line.indexOf(this.SearchFan) > 0) {
+            if (line.indexOf(SearchElement) >= 0) {
                 if (this.ScriptFilter) {
                     return line.substring(this.ScriptFilter_Init, this.ScriptFilter_End) + ' RPM';
-                } else {
-                    return line;
                 }
+                return line;
             }
         }
         return 'sudo modprobe i8k force=1';
